@@ -58,6 +58,7 @@ public class ChatServer {
                 // Agregar al mapa de clientes conectados
                 connectedClients.put(username, out);
                 broadcast("--- " + username + " se ha unido al chat ---");
+                broadcastUserList();
 
                 String message;
                 // Leer mensajes del cliente y procesarlos
@@ -76,6 +77,7 @@ public class ChatServer {
                 if (username != null) {
                     connectedClients.remove(username);
                     broadcast("--- " + username + " ha abandonado el chat ---");
+                    broadcastUserList();
                 }
                 try {
                     socket.close();
@@ -84,6 +86,14 @@ public class ChatServer {
                 }
                 System.out.println("El usuario '" + username + "' se ha desconectado.");
             }
+        }
+
+        /**
+         * Envía la lista actualizada de usuarios a todos los clientes.
+         */
+        private void broadcastUserList() {
+            String userListMessage = "/userlist " + String.join(",", connectedClients.keySet());
+            broadcast(userListMessage);
         }
 
         /**
