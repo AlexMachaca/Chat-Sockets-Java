@@ -1,11 +1,12 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ChatServer {
     private static final int PORT = 5000;
-    // Lista para almacenar los flujos de salida de todos los clientes conectados
-    private static Set<PrintWriter> clientWriters = Collections.synchronizedSet(new HashSet<>());
+    // Mapa para asociar nombres de usuario con sus respectivos flujos de salida
+    private static Map<String, PrintWriter> connectedClients = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
         System.out.println("Iniciando el servidor de chat en el puerto " + PORT + "...");
@@ -46,26 +47,34 @@ public class ChatServer {
                 
                 // Leer el nombre de usuario (primer mensaje del cliente)
                 username = in.readLine();
+                
+                if (username == null || username.trim().isEmpty()) {
+                    socket.close();
+                    return;
+                }
+
                 System.out.println("¡El usuario '" + username + "' se ha conectado desde " + socket.getInetAddress().getHostAddress() + "!");
 
-                // Agregar el flujo de salida a la lista global
-                clientWriters.add(out);
+                // Agregar al mapa de clientes conectados
+                connectedClients.put(username, out);
                 broadcast("--- " + username + " se ha unido al chat ---");
 
                 String message;
-                // Leer mensajes del cliente y retransmitirlos a los demás
+                // Leer mensajes del cliente y procesarlos
                 while ((message = in.readLine()) != null) {
-                    System.out.println(username + ": " + message);
-                    broadcast(username + ": " + message);
+                    if (message.startsWith("@")) {
+                        handlePrivateMessage(message);
+                    } else {
+                        System.out.println(username + ": " + message);
+                        broadcast(username + ": " + message);
+                    }
                 }
             } catch (IOException e) {
                 System.err.println("Error en la conexión con el cliente '" + username + "': " + e.getMessage());
             } finally {
                 // Limpiar recursos al desconectarse el cliente
-                if (out != null) {
-                    clientWriters.remove(out);
-                }
                 if (username != null) {
+                    connectedClients.remove(username);
                     broadcast("--- " + username + " ha abandonado el chat ---");
                 }
                 try {
@@ -78,13 +87,32 @@ public class ChatServer {
         }
 
         /**
+         * Procesa un mensaje privado con el formato @usuario mensaje
+         */
+        private void handlePrivateMessage(String message) {
+            int firstSpace = message.indexOf(" ");
+            if (firstSpace > 1) {
+                String targetUser = message.substring(1, firstSpace);
+                String privateMsg = message.substring(firstSpace + 1);
+                
+                PrintWriter targetOut = connectedClients.get(targetUser);
+                if (targetOut != null) {
+                    targetOut.println("[Privado de " + username + "]: " + privateMsg);
+                    out.println("[Privado para " + targetUser + "]: " + privateMsg);
+                } else {
+                    out.println("--- Error: El usuario '" + targetUser + "' no está conectado ---");
+                }
+            } else {
+                out.println("--- Formato incorrecto. Usa: @usuario mensaje ---");
+            }
+        }
+
+        /**
          * Envía un mensaje a todos los clientes conectados.
          */
         private void broadcast(String message) {
-            synchronized (clientWriters) {
-                for (PrintWriter writer : clientWriters) {
-                    writer.println(message);
-                }
+            for (PrintWriter writer : connectedClients.values()) {
+                writer.println(message);
             }
         }
     }

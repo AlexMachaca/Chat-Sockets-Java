@@ -21,7 +21,8 @@ public class ChatClient {
             String username = scanner.nextLine();
             out.println(username);
 
-            System.out.println("Escribe tu mensaje y presiona Enter (Escribe 'salir' para terminar):");
+            System.out.println("Escribe tu mensaje y presiona Enter.");
+            System.out.println("Formatos: \n - Mensaje público: escribe normal\n - Mensaje privado: @usuario mensaje\n - Salir: escribe 'salir'");
             while (true) {
                 String userInput = scanner.nextLine();
                 if ("salir".equalsIgnoreCase(userInput)) {
