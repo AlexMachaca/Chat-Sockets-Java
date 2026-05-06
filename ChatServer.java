@@ -32,6 +32,7 @@ public class ChatServer {
         private Socket socket;
         private PrintWriter out;
         private BufferedReader in;
+        private String username;
 
         public ClientHandler(Socket socket) {
             this.socket = socket;
@@ -43,28 +44,36 @@ public class ChatServer {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 out = new PrintWriter(socket.getOutputStream(), true);
                 
+                // Leer el nombre de usuario (primer mensaje del cliente)
+                username = in.readLine();
+                System.out.println("¡El usuario '" + username + "' se ha conectado desde " + socket.getInetAddress().getHostAddress() + "!");
+
                 // Agregar el flujo de salida a la lista global
                 clientWriters.add(out);
+                broadcast("--- " + username + " se ha unido al chat ---");
 
                 String message;
                 // Leer mensajes del cliente y retransmitirlos a los demás
                 while ((message = in.readLine()) != null) {
-                    System.out.println("Mensaje recibido: " + message);
-                    broadcast(message);
+                    System.out.println(username + ": " + message);
+                    broadcast(username + ": " + message);
                 }
             } catch (IOException e) {
-                System.err.println("Error en la conexión con el cliente: " + e.getMessage());
+                System.err.println("Error en la conexión con el cliente '" + username + "': " + e.getMessage());
             } finally {
                 // Limpiar recursos al desconectarse el cliente
                 if (out != null) {
                     clientWriters.remove(out);
+                }
+                if (username != null) {
+                    broadcast("--- " + username + " ha abandonado el chat ---");
                 }
                 try {
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                System.out.println("Un cliente se ha desconectado.");
+                System.out.println("El usuario '" + username + "' se ha desconectado.");
             }
         }
 
