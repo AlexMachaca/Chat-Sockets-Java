@@ -1,0 +1,2 @@
+mongodb.connection_string=mongodb+srv://<usuario>:<password>@<cluster>.mongodb.net/?appName=<AppName>
+mongodb.database_name=chat_app

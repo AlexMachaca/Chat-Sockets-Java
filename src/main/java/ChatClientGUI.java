@@ -219,6 +219,15 @@ public class ChatClientGUI extends Application {
                         });
                     } else if (msg.startsWith("---")) {
                         addSystemMessage(msg);
+                    } else if (msg.startsWith("ERROR:")) {
+                        addSystemMessage(msg.substring(6));
+                        Platform.runLater(() -> {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("Error de conexion");
+                            alert.setHeaderText(null);
+                            alert.setContentText(msg.substring(6));
+                            alert.showAndWait();
+                        });
                     } else {
                         addMessageBubble(msg);
                     }
